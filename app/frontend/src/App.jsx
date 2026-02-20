@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  CheckCircle, CreditCard, ChevronLeft, ChevronRight, X, Share2, Loader2, Save, Image as ImageIcon, Settings as SettingsIcon
+  CheckCircle, CreditCard, ChevronLeft, ChevronRight, X, Share2, Loader2, Save, Image as ImageIcon, Settings as SettingsIcon, ChevronDown, Search
 } from 'lucide-react';
 
 // IMPORT COMPONENT ADMIN TỪ FILE RIÊNG
@@ -14,21 +14,148 @@ const DEFAULT_ASSETS = {
   defaultEnvelope: "https://orientalmestore.com/cdn/shop/files/Personalizable_Year_of_Horse_2026_Red_Envelopes_1.jpg?v=1761089591&width=486",
 };
 
+// --- DANH SÁCH NGÂN HÀNG ĐẦY ĐỦ TẠI VIỆT NAM ---
 const BANKS = [
-  { code: 'MB', name: 'MB Bank', bin: '970422' },
-  { code: 'VCB', name: 'Vietcombank', bin: '970436' },
-  { code: 'ICB', name: 'VietinBank', bin: '970415' },
-  { code: 'TCB', name: 'Techcombank', bin: '970407' },
-  { code: 'ACB', name: 'ACB', bin: '970416' },
-  { code: 'VPB', name: 'VPBank', bin: '970432' },
-  { code: 'TPB', name: 'TPBank', bin: '970423' },
-  { code: 'BIDV', name: 'BIDV', bin: '970418' },
-  { code: 'VIB', name: 'VIB', bin: '970441' },
+  { code: 'VCB', name: 'Ngoại thương Việt Nam (Vietcombank)' },
+  { code: 'CTG', name: 'Công thương Việt Nam (VietinBank)' },
+  { code: 'BIDV', name: 'Đầu tư và Phát triển Việt Nam (BIDV)' },
+  { code: 'VBA', name: 'Nông nghiệp và Phát triển Nông thôn (Agribank)' },
+  { code: 'TCB', name: 'Kỹ Thương Việt Nam (Techcombank)' },
+  { code: 'MB', name: 'Quân đội (MBBank)' },
+  { code: 'VPB', name: 'Việt Nam Thịnh Vượng (VPBank)' },
+  { code: 'ACB', name: 'Á Châu (ACB)' },
+  { code: 'STB', name: 'Sài Gòn Thương Tín (Sacombank)' },
+  { code: 'HDB', name: 'Phát triển Thành phố Hồ Chí Minh (HDBank)' },
+  { code: 'VIB', name: 'Quốc tế Việt Nam (VIB)' },
+  { code: 'TPB', name: 'Tiên Phong (TPBank)' },
+  { code: 'SHB', name: 'Sài Gòn - Hà Nội (SHB)' },
+  { code: 'EIB', name: 'Xuất Nhập khẩu Việt Nam (Eximbank)' },
+  { code: 'MSB', name: 'Hàng Hải Việt Nam (MSB)' },
+  { code: 'SSB', name: 'Đông Nam Á (SeABank)' },
+  { code: 'OCB', name: 'Phương Đông (OCB)' },
+  { code: 'LPB', name: 'Lộc Phát Việt Nam (LPBank)' },
+  { code: 'NAB', name: 'Nam Á (Nam A Bank)' },
+  { code: 'KLB', name: 'Kiên Long (Kienlongbank)' },
+  { code: 'VAB', name: 'Việt Á (VietABank)' },
+  { code: 'BAB', name: 'Bắc Á (Bac A Bank)' },
+  { code: 'BVB', name: 'Bảo Việt (BaoViet Bank)' },
+  { code: 'SGB', name: 'Sài Gòn Công Thương (Saigonbank)' },
+  { code: 'PGB', name: 'Thịnh vượng và Phát triển (PGBank)' },
+  { code: 'BVBANK', name: 'Bản Việt (BVBank)' },
+  { code: 'OCEANBANK', name: 'Đại Dương (OceanBank)' },
+  { code: 'CBBANK', name: 'Xây dựng Việt Nam (CBBank)' },
+  { code: 'GPBANK', name: 'Dầu Khí Toàn Cầu (GPBank)' },
+  { code: 'VRB', name: 'Liên doanh Việt - Nga (VRB)' },
+  { code: 'SCB', name: 'Sài Gòn (SCB)' },
+  { code: 'ABB', name: 'An Bình (ABBank)' },
+  { code: 'NCB', name: 'Quốc dân (NCB)' },
+  { code: 'VIETBANK', name: 'Việt Nam Thương Tín (Vietbank)' },
+  { code: 'DONGABANK', name: 'Đông Á (DongA Bank)' },
+  { code: 'SHINHAN', name: 'Shinhan Bank Việt Nam' },
+  { code: 'WOORI', name: 'Woori Bank Việt Nam' },
+  { code: 'HSBC', name: 'HSBC Việt Nam' },
+  { code: 'SCVN', name: 'Standard Chartered Việt Nam' },
+  { code: 'UOB', name: 'UOB Việt Nam' },
+  { code: 'CIMB', name: 'CIMB Việt Nam' },
+  { code: 'PBVN', name: 'Public Bank Việt Nam' },
+  { code: 'HLBVN', name: 'Hong Leong Việt Nam' },
+  { code: 'IVB', name: 'Indovina Bank (IVB)' },
+  { code: 'TIMO', name: 'Timo Digital Bank' },
+  { code: 'CAKE', name: 'Cake by VPBank' },
+  { code: 'TNEX', name: 'TNEX by MSB' },
+  { code: 'MOMO', name: 'Ví Điện Tử MoMo' },
+  { code: 'ZALOPAY', name: 'Ví Điện Tử ZaloPay' },
+  { code: 'VIETTEL', name: 'Viettel Money' },
+  { code: 'VNPT', name: 'VNPT Money' }
 ];
 
 /* =========================================
    USER VIEW COMPONENTS
    ========================================= */
+
+const SearchableBankSelect = ({ banks, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wrapperRef]);
+
+  const filteredBanks = banks.filter(b => 
+    b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    b.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedBank = banks.find(b => b.code === value);
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <div 
+        className="w-full p-3 sm:p-4 rounded-lg bg-white text-black font-bold text-base sm:text-lg cursor-pointer flex justify-between items-center"
+        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+      >
+        <span className="truncate pr-2">
+          {selectedBank ? `${selectedBank.code} - ${selectedBank.name}` : "Chọn ngân hàng..."}
+        </span>
+        <ChevronDown className={`transform transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} size={20} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-[100] w-full mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
+          >
+            <div className="p-2 bg-gray-50 border-b border-gray-200">
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                <input
+                  type="text"
+                  autoFocus
+                  className="w-full pl-10 pr-3 py-3 border rounded-md text-base text-black font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  placeholder="Nhập tên hoặc mã ngân hàng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onClick={(e) => e.stopPropagation()} 
+                />
+              </div>
+            </div>
+            <ul className="max-h-60 overflow-y-auto">
+              {filteredBanks.length > 0 ? (
+                filteredBanks.map(b => (
+                  <li
+                    key={b.code}
+                    className="px-4 py-3 hover:bg-amber-100 cursor-pointer text-black border-b border-gray-100 last:border-b-0 flex flex-col"
+                    onClick={() => {
+                      onChange(b.code);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <span className="font-bold text-blue-800">{b.code}</span>
+                    <span className="text-sm font-medium text-gray-700">{b.name}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-6 text-gray-500 text-sm text-center">
+                  Không tìm thấy ngân hàng phù hợp
+                </li>
+              )}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const EnvelopeCarousel = ({ onSelect, count = 8, envelopeImages, defaultEnvelope }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -99,30 +226,83 @@ const EnvelopeCarousel = ({ onSelect, count = 8, envelopeImages, defaultEnvelope
 
 const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
   const cardRef = useRef(null);
+  const [isSharing, setIsSharing] = useState(false);
+  
+  // State lưu trữ bản sao an toàn (Base64) của ảnh để html2canvas không bị lỗi CORS
+  const [safeImages, setSafeImages] = useState({ env: envelopeImg, money: moneyImg });
 
   useEffect(() => {
+    // Tải html2canvas
     if (!window.html2canvas) {
       const script = document.createElement('script');
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
       script.async = true;
       document.body.appendChild(script);
     }
-  }, []);
+
+    // Hàm chuyển đổi hình ảnh sang chuỗi Base64
+    const convertUrlToBase64 = async (url, key) => {
+      if (!url || url.startsWith('data:')) return;
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSafeImages(prev => ({ ...prev, [key]: reader.result }));
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.warn(`Không thể chuyển đổi ảnh ${key} sang base64 (lỗi CORS), vẫn sử dụng URL gốc.`, e);
+      }
+    };
+
+    convertUrlToBase64(envelopeImg, 'env');
+    convertUrlToBase64(moneyImg, 'money');
+  }, [envelopeImg, moneyImg]);
 
   const handleShare = async () => {
     if (cardRef.current && window.html2canvas) {
       try {
-        const canvas = await window.html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+        setIsSharing(true);
+        
+        // Đợi 300ms đảm bảo DOM đã được cập nhật bản Base64 đầy đủ
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const canvas = await window.html2canvas(cardRef.current, { 
+          scale: 3, // Tăng độ nét cho ảnh xuất ra
+          useCORS: true, 
+          backgroundColor: null,
+          imageTimeout: 15000 // Tăng thời gian chờ load ảnh
+        });
+        
         const image = canvas.toDataURL("image/png");
-        if (navigator.share) {
-          const blob = await (await fetch(image)).blob();
-          const file = new File([blob], "loc-tet.png", { type: "image/png" });
-          await navigator.share({ title: 'Lộc Tết', text: `Mình nhận được ${amount.toLocaleString()}đ!`, files: [file] });
+        
+        // Chuyển DataURL thành File object
+        const blob = await (await fetch(image)).blob();
+        const file = new File([blob], "loc-tet.png", { type: "image/png" });
+        
+        // Kiểm tra trình duyệt có hỗ trợ share file (Zalo, Facebook, v.v...) không
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ 
+            title: 'Lộc Tết', 
+            text: `Mình nhận được ${amount.toLocaleString()}đ!`, 
+            files: [file] 
+          });
         } else {
+          // Fallback: Nếu trình duyệt không hỗ trợ share (như Chrome PC), tự động tải ảnh về
           const link = document.createElement('a');
-          link.href = image; link.download = 'loc-tet.png'; link.click();
+          link.href = image; 
+          link.download = 'loc-tet.png'; 
+          link.click();
         }
-      } catch (e) { alert("Lỗi chia sẻ, vui lòng thử lại."); }
+      } catch (e) { 
+        console.error(e);
+        alert("Lỗi khi tạo ảnh chia sẻ, vui lòng thử lại."); 
+      } finally {
+        setIsSharing(false);
+      }
+    } else {
+        alert("Công cụ tạo ảnh đang được tải, vui lòng thử lại sau vài giây.");
     }
   };
 
@@ -132,14 +312,24 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
         <div ref={cardRef} className="bg-red-800 p-5 sm:p-8 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.5)] border-2 sm:border-4 border-amber-400 text-center relative overflow-hidden flex flex-col items-center">
             <h3 className="text-amber-200 font-serif text-3xl sm:text-4xl mb-4 sm:mb-8 font-bold relative z-10 drop-shadow-md">XUÂN NHƯ Ý</h3>
             <div className="relative z-10 w-full h-44 sm:h-64 mb-4 sm:mb-6 flex justify-center items-center">
-                <img src={envelopeImg} className="absolute left-0 sm:left-4 w-24 sm:w-40 h-auto transform -rotate-12 z-10 rounded-md shadow-lg object-contain" alt="E" />
-                <img src={moneyImg} className="absolute right-0 sm:right-4 w-40 sm:w-64 h-auto transform rotate-6 shadow-xl sm:shadow-2xl rounded-sm border border-white/50 z-20 object-contain" alt="M" />
+                {/* Dùng base64 và thêm crossOrigin="anonymous" */}
+                <img src={safeImages.env} crossOrigin="anonymous" className="absolute left-0 sm:left-4 w-24 sm:w-40 h-auto transform -rotate-12 z-10 rounded-md shadow-lg object-contain" alt="Envelope" />
+                <img src={safeImages.money} crossOrigin="anonymous" className="absolute right-0 sm:right-4 w-40 sm:w-64 h-auto transform rotate-6 shadow-xl sm:shadow-2xl rounded-sm border border-white/50 z-20 object-contain" alt="Money" />
             </div>
             <div className="bg-white/95 p-3 sm:p-4 rounded-xl z-10 w-full shadow-inner"><p className="text-red-600 font-black text-3xl sm:text-5xl">{amount.toLocaleString()} <span className="text-base sm:text-xl">VND</span></p></div>
         </div>
         <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4 w-full mx-auto">
-            <button onClick={handleShare} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg transition-colors"><Share2 size={20} /> Khoe Lộc Ngay</button>
-            <button onClick={onNext} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-red-900 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg transition-colors"><CreditCard size={20} /> Rút Tiền Về Ngân Hàng</button>
+            <button 
+              onClick={handleShare} 
+              disabled={isSharing}
+              className={`w-full flex items-center justify-center gap-2 text-white py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg transition-colors ${isSharing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+            >
+              {isSharing ? <Loader2 className="animate-spin" size={20} /> : <Share2 size={20} />} 
+              {isSharing ? 'Đang tạo ảnh...' : 'Khoe Lộc Ngay'}
+            </button>
+            <button onClick={onNext} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-red-900 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg transition-colors">
+              <CreditCard size={20} /> Rút Tiền Về Ngân Hàng
+            </button>
         </div>
       </div>
     </div>
@@ -148,16 +338,39 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
 
 const BankForm = ({ onSubmit, amount }) => {
   const [formData, setFormData] = useState({ name: '', bank: BANKS[0].code, account: '' });
+
   return (
     <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.3)] text-white">
       <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-amber-400 text-center drop-shadow-md">Thông tin nhận Lộc</h3>
       <div className="space-y-4 sm:space-y-5">
-        <input type="text" className="w-full p-3 sm:p-4 rounded-lg text-black font-bold uppercase text-base sm:text-lg" placeholder="TÊN CHỦ TÀI KHOẢN" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} />
-        <select className="w-full p-3 sm:p-4 rounded-lg text-black font-bold text-base sm:text-lg" value={formData.bank} onChange={e => setFormData({...formData, bank: e.target.value})}>
-          {BANKS.map(b => <option key={b.code} value={b.code}>{b.code} - {b.name}</option>)}
-        </select>
-        <input type="number" className="w-full p-3 sm:p-4 rounded-lg text-black font-bold text-base sm:text-lg" placeholder="SỐ TÀI KHOẢN" value={formData.account} onChange={e => setFormData({...formData, account: e.target.value})} />
-        <button onClick={() => onSubmit(formData)} className="w-full mt-4 sm:mt-6 bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 rounded-lg shadow-xl uppercase text-lg sm:text-xl transition-transform hover:scale-105">Xác Nhận Nhận {amount.toLocaleString()}đ</button>
+        <input 
+          type="text" 
+          className="w-full p-3 sm:p-4 rounded-lg text-black font-bold uppercase text-base sm:text-lg" 
+          placeholder="TÊN CHỦ TÀI KHOẢN" 
+          value={formData.name} 
+          onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
+        />
+        
+        <SearchableBankSelect 
+          banks={BANKS} 
+          value={formData.bank} 
+          onChange={(newBankCode) => setFormData({...formData, bank: newBankCode})} 
+        />
+
+        <input 
+          type="text" 
+          className="w-full p-3 sm:p-4 rounded-lg text-black font-bold text-base sm:text-lg" 
+          placeholder="SỐ TÀI KHOẢN / SỐ ĐIỆN THOẠI" 
+          value={formData.account} 
+          onChange={e => setFormData({...formData, account: e.target.value})} 
+        />
+
+        <button 
+          onClick={() => onSubmit(formData)} 
+          className="w-full mt-4 sm:mt-6 bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 rounded-lg shadow-xl uppercase text-lg sm:text-xl transition-transform hover:scale-105"
+        >
+          Xác Nhận Nhận {amount.toLocaleString()}đ
+        </button>
       </div>
     </div>
   );
@@ -174,7 +387,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [appAssets, setAppAssets] = useState(DEFAULT_ASSETS);
   
-  // States cho tính năng Đăng nhập Admin
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
@@ -240,7 +452,6 @@ export default function App() {
     } catch (e) { alert("Lỗi khi lưu thông tin"); }
   };
 
-  // Xử lý xác thực Admin
   const handleAdminAuth = (e) => {
     e.preventDefault();
     if (adminPassword === 'Lixi@2026') {
@@ -271,7 +482,6 @@ export default function App() {
       <div className="fixed top-0 left-0 z-0 w-full h-[100vh]" style={bgStyle} />
       {view === 'home' && <div className="fixed top-0 left-0 bg-black/10 z-0 pointer-events-none w-full h-[100vh]" />}
       
-      {/* Nút Admin được cập nhật để mở Modal Auth thay vì vào thẳng */}
       <button 
         onClick={() => setShowAdminAuth(true)} 
         className="fixed bottom-3 right-3 z-50 bg-black/40 hover:bg-black/60 text-white/50 hover:text-white text-[10px] px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10 transition-all uppercase tracking-widest"
@@ -279,7 +489,6 @@ export default function App() {
         Admin
       </button>
 
-      {/* MODAL NHẬP MẬT KHẨU ADMIN */}
       <AnimatePresence>
         {showAdminAuth && (
           <motion.div 
