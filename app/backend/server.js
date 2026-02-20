@@ -276,7 +276,13 @@ app.post('/api/lixi/confirm', async (req, res) => {
 app.get('/api/admin/queue', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM transactions WHERE status = 'PENDING' ORDER BY created_at ASC");
-    res.json(result.rows);
+    // Tự động tạo trường transfer_content (đã bỏ dấu và viết hoa tên) truyền xuống Frontend sinh QR
+    const rowsWithContent = result.rows.map(row => ({
+      ...row,
+      transfer_content: `Chuc mung nam moi Binh Ngo ${(row.user_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase()} - ${row.id}`
+    }));
+    
+    res.json(rowsWithContent);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

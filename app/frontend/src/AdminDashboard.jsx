@@ -638,7 +638,8 @@ const AdminQueueList = ({ queue, onMarkPaid, onReject }) => {
 
   const handleSaveQR = (tx) => {
     setLoadingId(tx.id);
-    const content = encodeURIComponent(`Lixi Tet`);
+    // Lấy transfer_content từ backend truyền lên, fallback về 'Lixi Tet' nếu không có
+    const content = encodeURIComponent(tx.transfer_content || `Lixi Tet`);
     const imgUrl = `https://img.vietqr.io/image/${tx.bank_code}-${tx.bank_account}-compact.png?amount=${tx.amount}&addInfo=${content}&accountName=${encodeURIComponent(tx.user_name)}`;
     fetch(imgUrl).then(r => r.blob()).then(blob => {
       const link = document.createElement('a');
@@ -651,7 +652,8 @@ const AdminQueueList = ({ queue, onMarkPaid, onReject }) => {
 
   const handleOpenApp = (tx) => {
     const bankInfo = BANKS.find(b => b.code === tx.bank_code) || { bin: tx.bank_code };
-    const content = encodeURIComponent(`Lixi Tet`);
+    // Lấy transfer_content từ backend truyền lên, fallback về 'Lixi Tet' nếu không có
+    const content = encodeURIComponent(tx.transfer_content || `Lixi Tet`);
     window.location.href = `https://dl.vietqr.io/pay?app=${adminBankApp}&b=${bankInfo.bin}&n=${tx.bank_account}&a=${tx.amount}&c=${content}&tn=${encodeURIComponent(tx.user_name)}`;
   };
 
