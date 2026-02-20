@@ -321,10 +321,13 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
   };
 
   const handleMoneyTypeChange = (index, selectedAmount) => {
-    const selectedType = moneyTypes.find(t => Number(t.amount) === selectedAmount);
+    // Sử dụng logic khử nhiễu dấu phẩy/chữ rác để đảm bảo so sánh chính xác
+    const cleanAmount = (val) => Number(String(val).replace(/[, đ]/g, ''));
+    const selectedType = moneyTypes.find(t => cleanAmount(t.amount) === selectedAmount);
+    
     if (selectedType) {
       const newPrizes = [...form.prizes];
-      newPrizes[index] = { ...newPrizes[index], amount: Number(selectedType.amount), image_url: selectedType.image_url };
+      newPrizes[index] = { ...newPrizes[index], amount: cleanAmount(selectedType.amount), image_url: selectedType.image_url };
       setForm({ ...form, prizes: newPrizes });
     }
   };
@@ -399,24 +402,40 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
                 <div className="col-span-3">Hình ảnh xem trước</div>
                 <div className="col-span-1"></div>
               </div>
-              {form.prizes.map((prize, idx) => (
+              {form.prizes.map((prize, idx) => {
+                // Hàm khử nhiễu: Loại bỏ dấu phẩy (,), khoảng trắng hoặc định dạng lạ từ DB tránh bị lỗi NaN
+                const cleanAmountStr = (val) => {
+                  if (val == null || val === '') return '';
+                  const parsed = Number(String(val).replace(/[, đ]/g, ''));
+                  return isNaN(parsed) ? '' : String(parsed);
+                };
+                
+                const currentAmountStr = cleanAmountStr(prize.amount);
+                const isAmountInList = moneyTypes.some(t => cleanAmountStr(t.amount) === currentAmountStr && currentAmountStr !== '');
+                
+                return (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2 border rounded shadow-sm">
                   <div className="col-span-5">
-                    {/* Fix: Chuyển đổi toàn bộ value của thẻ <select> và <option> thành String để đảm bảo mapping chính xác, giải quyết lỗi load sai giá trị 0 hoặc Type Mismatch */}
                     <select 
                       className="w-full border p-2 rounded font-bold text-green-700 bg-white" 
-                      value={prize.amount != null ? String(prize.amount) : ''} 
+                      value={currentAmountStr} 
                       onChange={e => handleMoneyTypeChange(idx, Number(e.target.value))}
                     >
                       <option value="" disabled>Chọn mệnh giá...</option>
-                      {moneyTypes.map(t => <option key={t.id} value={String(t.amount)}>{Number(t.amount).toLocaleString()} đ</option>)}
+                      {currentAmountStr && !isAmountInList && (
+                        <option value={currentAmountStr}>{Number(currentAmountStr).toLocaleString()} đ (Mệnh giá cũ)</option>
+                      )}
+                      {moneyTypes.map(t => {
+                        const tAmountStr = cleanAmountStr(t.amount);
+                        return <option key={t.id} value={tAmountStr}>{Number(tAmountStr).toLocaleString()} đ</option>
+                      })}
                     </select>
                   </div>
                   <div className="col-span-3"><input type="number" className="w-full border p-2 rounded text-center" value={prize.quantity !== undefined ? prize.quantity : (prize.remaining_qty || 0)} onChange={e => updatePrize(idx, 'quantity', Number(e.target.value))}/></div>
                   <div className="col-span-3 flex justify-center"><img src={prize.image_url || 'https://via.placeholder.com/60x30?text=Money'} className="w-16 h-8 object-cover border rounded bg-gray-100" alt="preview"/></div>
                   <div className="col-span-1 text-center"><button onClick={() => removePrize(idx)} className="text-red-500 hover:bg-red-50 p-1.5 rounded"><Trash2 size={16}/></button></div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>

@@ -88,21 +88,28 @@ const SearchableBankSelect = ({ banks, value, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [wrapperRef]);
 
-  const filteredBanks = banks.filter(b => 
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    b.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Hàm loại bỏ dấu tiếng Việt để tìm kiếm dễ dàng hơn
+  const removeAccents = (str) => {
+    return str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D') : '';
+  };
+
+  const filteredBanks = banks.filter(b => {
+    const searchNormalized = removeAccents(searchTerm.toLowerCase());
+    const nameNormalized = removeAccents(b.name.toLowerCase());
+    const codeNormalized = removeAccents(b.code.toLowerCase());
+    return nameNormalized.includes(searchNormalized) || codeNormalized.includes(searchNormalized);
+  });
 
   const selectedBank = banks.find(b => b.code === value);
 
   return (
     <div ref={wrapperRef} className="relative w-full">
       <div 
-        className="w-full p-3 sm:p-4 rounded-lg bg-white text-black font-bold text-base sm:text-lg cursor-pointer flex justify-between items-center"
+        className={`w-full p-3 sm:p-4 rounded-lg bg-white font-bold text-base sm:text-lg cursor-pointer flex justify-between items-center ${selectedBank ? 'text-black' : 'text-gray-400'}`}
         onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
       >
         <span className="truncate pr-2">
-          {selectedBank ? `${selectedBank.code} - ${selectedBank.name}` : "Chọn ngân hàng..."}
+          {selectedBank ? `${selectedBank.code} - ${selectedBank.name}` : "Chọn ngân hàng (*)"}
         </span>
         <ChevronDown className={`transform transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} size={20} />
       </div>
@@ -268,10 +275,16 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
         // Đợi 300ms đảm bảo DOM đã được cập nhật bản Base64 đầy đủ
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        const canvas = await window.html2canvas(cardRef.current, { 
+        const element = cardRef.current;
+        const canvas = await window.html2canvas(element, { 
           scale: 3, // Tăng độ nét cho ảnh xuất ra
           useCORS: true, 
-          backgroundColor: null,
+          backgroundColor: '#991b1b', // Đặt màu nền trùng với bg-red-800 để tránh lỗi nền trong suốt
+          width: element.offsetWidth, // Ép cứng chiều rộng để fix lỗi bị cắt dọc ảnh
+          height: element.offsetHeight, // Ép cứng chiều cao thực tế của thẻ
+          windowWidth: window.innerWidth, // Giúp html2canvas tính toán Flexbox chuẩn xác hơn
+          scrollX: 0, // Reset tọa độ cuộn
+          scrollY: 0,
           imageTimeout: 15000 // Tăng thời gian chờ load ảnh
         });
         
@@ -336,8 +349,27 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
   );
 };
 
-const BankForm = ({ onSubmit, amount }) => {
-  const [formData, setFormData] = useState({ name: '', bank: BANKS[0].code, account: '' });
+cconst BankForm = ({ onSubmit, amount }) => {
+  // Sửa bank thành chuỗi rỗng để bắt buộc người dùng phải click chọn
+  const [formData, setFormData] = useState({ name: '', bank: '', account: '' });
+  const [error, setError] = useState('');
+
+  const handleSubmit = () => {
+    // Validate Ngân hàng
+    if (!formData.bank) {
+      setError('Vui lòng chọn ngân hàng nhận tiền!');
+      return;
+    }
+    // Validate Số tài khoản
+    if (!formData.account || formData.account.trim() === '') {
+      setError('Vui lòng nhập số tài khoản / số điện thoại!');
+      return;
+    }
+    
+    // Nếu pass hết điều kiện, xóa lỗi và submit
+    setError('');
+    onSubmit(formData);
+  };
 
   return (
     <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.3)] text-white">
@@ -346,7 +378,7 @@ const BankForm = ({ onSubmit, amount }) => {
         <input 
           type="text" 
           className="w-full p-3 sm:p-4 rounded-lg text-black font-bold uppercase text-base sm:text-lg" 
-          placeholder="TÊN CHỦ TÀI KHOẢN" 
+          placeholder="TÊN CHỦ TÀI KHOẢN (Tùy chọn)" 
           value={formData.name} 
           onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
         />
@@ -354,19 +386,32 @@ const BankForm = ({ onSubmit, amount }) => {
         <SearchableBankSelect 
           banks={BANKS} 
           value={formData.bank} 
-          onChange={(newBankCode) => setFormData({...formData, bank: newBankCode})} 
+          onChange={(newBankCode) => {
+            setFormData({...formData, bank: newBankCode});
+            if (error) setError(''); // Xóa lỗi khi người dùng chọn xong
+          }} 
         />
 
         <input 
           type="text" 
           className="w-full p-3 sm:p-4 rounded-lg text-black font-bold text-base sm:text-lg" 
-          placeholder="SỐ TÀI KHOẢN / SỐ ĐIỆN THOẠI" 
+          placeholder="SỐ TÀI KHOẢN / SĐT (*)" 
           value={formData.account} 
-          onChange={e => setFormData({...formData, account: e.target.value})} 
+          onChange={e => {
+            setFormData({...formData, account: e.target.value});
+            if (error) setError(''); // Xóa lỗi khi người dùng gõ
+          }} 
         />
 
+        {/* Hiển thị thông báo lỗi nếu có */}
+        {error && (
+          <div className="bg-red-500/80 border border-red-300 text-white px-3 py-2 rounded-lg text-center font-medium animate-pulse">
+            {error}
+          </div>
+        )}
+
         <button 
-          onClick={() => onSubmit(formData)} 
+          onClick={handleSubmit} 
           className="w-full mt-4 sm:mt-6 bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 rounded-lg shadow-xl uppercase text-lg sm:text-xl transition-transform hover:scale-105"
         >
           Xác Nhận Nhận {amount.toLocaleString()}đ
