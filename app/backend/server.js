@@ -11,11 +11,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Kết nối PostgreSQL thông qua biến môi trường từ Docker
 const pool = new Pool({
-  user: process.env.POSTGRES_USER || 'admin',
-  host: process.env.POSTGRES_HOST || 'db',
-  database: process.env.POSTGRES_DB || 'lixi_tet',
-  password: process.env.POSTGRES_PASSWORD || 'adminpassword',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Dữ liệu mẫu dự phòng cực kỳ quan trọng để giao diện không bị treo khi DB trống
