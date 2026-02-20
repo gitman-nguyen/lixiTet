@@ -276,11 +276,23 @@ app.post('/api/lixi/confirm', async (req, res) => {
 app.get('/api/admin/queue', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM transactions WHERE status = 'PENDING' ORDER BY created_at ASC");
-    // Tự động tạo trường transfer_content (đã bỏ dấu và viết hoa tên) truyền xuống Frontend sinh QR
-    const rowsWithContent = result.rows.map(row => ({
-      ...row,
-      transfer_content: `Chuc mung nam moi Binh Ngo ${(row.user_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase()} - ${row.id}`
-    }));
+    
+    const rowsWithContent = result.rows.map(row => {
+      const cleanName = (row.user_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().trim();
+      
+      // Lấy từ cuối cùng trong tên
+      const nameParts = cleanName.split(' ');
+      const shortName = nameParts[nameParts.length - 1] || '';
+      
+      // Lấy 5 ký tự cuối của mã giao dịch
+      const shortTxId = row.id.slice(-5); 
+      
+      return {
+        ...row,
+        // Ép giới hạn chuẩn 45 ký tự để an toàn tuyệt đối
+        transfer_content: `Chuc mung nam moi ${shortName} - ${shortTxId}`.substring(0, 45).trim()
+      };
+    });
     
     res.json(rowsWithContent);
   } catch (err) {
