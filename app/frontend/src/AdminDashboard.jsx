@@ -825,6 +825,23 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
     Promise.all([fetchQueue(), fetchCampaigns(), loadSettings(), fetchHistory()]).finally(() => setLoading(false));
   }, []);
 
+  // THÊM MỚI: Hook tự động cập nhật hàng đợi
+  useEffect(() => {
+    let intervalId;
+    
+    // Chỉ tự động quét dữ liệu mới khi Admin đang mở tab 'queue'
+    if (tab === 'queue') {
+      intervalId = setInterval(() => {
+        fetchQueue();
+      }, 3000); // Cứ 3 giây (3000ms) sẽ tự động lấy dữ liệu mới ngầm 1 lần
+    }
+
+    // Dọn dẹp bộ đếm khi Admin chuyển sang tab khác để tránh hao tài nguyên
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [tab]); // Chạy lại logic này mỗi khi tab thay đổi
+
   const handleMarkPaid = async (id) => {
     try {
       await fetch(`/api/admin/pay/${id}`, { method: 'POST' });
