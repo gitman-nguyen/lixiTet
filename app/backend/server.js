@@ -196,7 +196,7 @@ app.post('/api/lixi/spin', async (req, res) => {
     }
 
     const prizesRes = await client.query(
-      'SELECT * FROM prizes WHERE campaign_id = $1 AND quantity > 0 FOR UPDATE',
+      'SELECT * FROM prizes WHERE campaign_id = $1 AND quantity > 0',
       [campaignId]
     );
 
@@ -206,11 +206,6 @@ app.post('/api/lixi/spin', async (req, res) => {
     }
 
     const wonPrize = prizesRes.rows[Math.floor(Math.random() * prizesRes.rows.length)];
-
-    await client.query(
-      'UPDATE prizes SET quantity = quantity - 1 WHERE id = $1',
-      [wonPrize.id]
-    );
 
     await client.query('COMMIT');
     res.json(wonPrize);
@@ -302,14 +297,37 @@ app.get('/api/admin/queue', async (req, res) => {
 
 // Xác nhận đã trả thưởng
 app.post('/api/admin/pay/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const { id } = req.params;
-    await pool.query("UPDATE transactions SET status = 'PAID' WHERE id = $1", [id]);
+
+    // 1. Lấy thông tin giao dịch
+    const txRes = await client.query('SELECT campaign_id, amount, status FROM transactions WHERE id = $1', [id]);
+    
+    if (txRes.rows.length > 0 && txRes.rows[0].status !== 'PAID') {
+       const tx = txRes.rows[0];
+       
+       // 2. CHỈ TRỪ SỐ LƯỢNG GIẢI THƯỞNG KHI THỰC SỰ TRẢ THƯỞNG THÀNH CÔNG
+       await client.query(
+         'UPDATE prizes SET quantity = quantity - 1 WHERE campaign_id = $1 AND amount = $2 AND quantity > 0', 
+         [tx.campaign_id, tx.amount]
+       );
+       
+       // 3. Cập nhật trạng thái giao dịch
+       await client.query("UPDATE transactions SET status = 'PAID' WHERE id = $1", [id]);
+    }
+
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
+
 // Từ chối trả thưởng
 app.post('/api/admin/reject/:id', async (req, res) => {
   const client = await pool.connect();
@@ -318,15 +336,15 @@ app.post('/api/admin/reject/:id', async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
 
-    // Lấy thông tin giao dịch để hoàn lại tiền (spent) cho chiến dịch
-    const txRes = await client.query('SELECT campaign_id, amount FROM transactions WHERE id = $1', [id]);
-    if (txRes.rows.length > 0) {
+    const txRes = await client.query('SELECT campaign_id, amount, status FROM transactions WHERE id = $1', [id]);
+    if (txRes.rows.length > 0 && txRes.rows[0].status !== 'REJECTED') {
       const tx = txRes.rows[0];
-      // Hoàn lại tiền đã tính vào 'spent' của chiến dịch
+      
+      // CHỈ hoàn lại tiền 'spent' cho chiến dịch (vì đã cộng lúc user confirm gửi form)
       await client.query('UPDATE campaigns SET spent = spent - $1 WHERE id = $2', [tx.amount, tx.campaign_id]);
+      
     }
 
-    // Cập nhật trạng thái thành REJECTED và lưu lý do vào cột 'note'
     await client.query("UPDATE transactions SET status = 'REJECTED', note = $1 WHERE id = $2", [reason, id]);
 
     await client.query('COMMIT');
