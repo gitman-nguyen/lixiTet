@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Thiết lập mặc định cho toàn bộ ứng dụng */
+:root {
+  --tet-red-dark: #652222;
+  --tet-gold: #fbbf24;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--tet-red-dark);
+  /* Chống cuộn ngang khi chạy hiệu ứng AnimatePresence */
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* Hiệu ứng đổ bóng tùy chỉnh cho phong bao */
+.drop-shadow-tet {
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+}
+
+/* Tối ưu hóa hiển thị cho thiết bị di động */
+@media (max-width: 640px) {
+  h1, h2 {
+    word-break: break-word;
+  }
+}
+
+/* Tùy chỉnh thanh cuộn cho bảng Admin */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(153, 27, 27, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(153, 27, 27, 0.4);
+}
