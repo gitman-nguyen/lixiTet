@@ -291,6 +291,34 @@ app.post('/api/admin/pay/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Từ chối trả thưởng
+app.post('/api/admin/reject/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    // Lấy thông tin giao dịch để hoàn lại tiền (spent) cho chiến dịch
+    const txRes = await client.query('SELECT campaign_id, amount FROM transactions WHERE id = $1', [id]);
+    if (txRes.rows.length > 0) {
+      const tx = txRes.rows[0];
+      // Hoàn lại tiền đã tính vào 'spent' của chiến dịch
+      await client.query('UPDATE campaigns SET spent = spent - $1 WHERE id = $2', [tx.amount, tx.campaign_id]);
+    }
+
+    // Cập nhật trạng thái thành REJECTED và lưu lý do vào cột 'note'
+    await client.query("UPDATE transactions SET status = 'REJECTED', note = $1 WHERE id = $2", [reason, id]);
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
 
 // --- PHỤC VỤ FRONTEND ---
 const publicPath = path.join(__dirname, 'public');

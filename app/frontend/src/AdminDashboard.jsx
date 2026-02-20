@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, Smartphone, QrCode, X, Settings, Copy, Save, Plus, Trash2, Edit3, 
   History, Wallet, Users, Loader2, Image as ImageIcon, Banknote, Gift,
-  Maximize2, Share2, Download
+  Maximize2, Share2, Download, XCircle
 } from 'lucide-react';
 
 // --- UTILS DÀNH CHO ADMIN ---
@@ -632,7 +632,7 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
 /* =========================================
    THÀNH PHẦN QUẢN LÝ HÀNG ĐỢI
    ========================================= */
-const AdminQueueList = ({ queue, onMarkPaid }) => {
+const AdminQueueList = ({ queue, onMarkPaid, onReject }) => {
   const [adminBankApp, setAdminBankApp] = useState('bidv');
   const [loadingId, setLoadingId] = useState(null);
 
@@ -678,7 +678,22 @@ const AdminQueueList = ({ queue, onMarkPaid }) => {
               <div className="flex gap-2 w-full md:w-auto">
                 <button onClick={() => handleSaveQR(tx)} className="flex-1 md:flex-none bg-indigo-600 text-white px-3 py-2 rounded text-sm font-bold flex items-center gap-1 justify-center disabled:opacity-50" disabled={loadingId === tx.id}><Save size={16} /> {loadingId === tx.id ? '...' : 'Lưu QR'}</button>
                 <button onClick={() => handleOpenApp(tx)} className="flex-1 md:flex-none bg-red-600 text-white px-3 py-2 rounded text-sm font-bold flex items-center gap-1 justify-center"><Smartphone size={16} /> Mở App</button>
-                <button onClick={() => onMarkPaid(tx.id)} className="bg-green-500 text-white p-2 rounded hover:bg-green-600"><CheckCircle size={20}/></button>
+                {/* Nút Duyệt */}
+                <button onClick={() => onMarkPaid(tx.id)} title="Đã chuyển tiền" className="bg-green-500 text-white p-2 rounded hover:bg-green-600"><CheckCircle size={20}/></button>
+                
+                {/* THÊM MỚI: Nút Từ chối */}
+                <button 
+                  onClick={() => {
+                    const reason = window.prompt(`Nhập lý do từ chối trả thưởng cho ${tx.user_name}:`);
+                    if (reason !== null && reason.trim() !== "") {
+                      onReject(tx.id, reason.trim());
+                    }
+                  }} 
+                  title="Từ chối" 
+                  className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                >
+                  <XCircle size={20}/>
+                </button>
               </div>
             </div>
           ))
@@ -733,6 +748,11 @@ const AdminHistoryList = ({ history }) => {
                     <td className="p-3 text-sm text-center">
                       {tx.status === 'PAID' ? (
                         <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">ĐÃ CHUYỂN</span>
+                      ) : tx.status === 'REJECTED' ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">TỪ CHỐI</span>
+                          {tx.note && <span className="text-[10px] text-gray-500 max-w-[120px] truncate" title={tx.note}>Lý do: {tx.note}</span>}
+                        </div>
                       ) : (
                         <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold">CHỜ XỬ LÝ</span>
                       )}
@@ -812,6 +832,21 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
     } catch (e) { alert("Lỗi khi cập nhật trạng thái"); }
   };
 
+  const handleReject = async (id, reason) => {
+    try {
+      const res = await fetch(`/api/admin/reject/${id}`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      if(res.ok) {
+        fetchQueue();
+      } else {
+        alert("Có lỗi xảy ra khi từ chối");
+      }
+    } catch (e) { alert("Lỗi kết nối khi từ chối trạng thái"); }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-100"><Loader2 className="animate-spin text-red-600" size={48} /></div>;
 
   return (
@@ -827,7 +862,7 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
         <button onClick={onBack} className="mt-auto p-3 text-gray-500 text-sm hover:underline flex items-center gap-1"><X size={14}/> Thoát Admin</button>
       </div>
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-        {tab === 'queue' && <AdminQueueList queue={queue} onMarkPaid={handleMarkPaid} />}
+        {tab === 'queue' && <AdminQueueList queue={queue} onMarkPaid={handleMarkPaid} onReject={handleReject} />}
         {tab === 'history' && <AdminHistoryList history={history} />}
         {tab === 'campaigns' && <AdminCampaignConfig campaigns={campaigns} setCampaigns={setCampaigns} onRefresh={fetchCampaigns} moneyTypes={moneyTypes} envelopeTypes={envelopeTypes} />}
         {tab === 'moneyTypes' && <AdminMoneyTypes moneyTypes={moneyTypes} setMoneyTypes={setMoneyTypes} />}
