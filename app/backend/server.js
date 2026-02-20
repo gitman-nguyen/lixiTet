@@ -234,8 +234,9 @@ app.post('/api/lixi/confirm', async (req, res) => {
 
     // Kiểm tra xem tên hoặc số tài khoản đã tồn tại trong bảng transactions chưa (Không phân biệt hoa thường với tên)
     // CẬP NHẬT: Thêm điều kiện AND campaign_id = $3 để chỉ check trùng trong cùng 1 chiến dịch
+    // Thêm AND status != 'REJECTED' để cho phép nhận lại nếu giao dịch trước đó bị từ chối
     const checkDuplicate = await pool.query(
-      'SELECT user_name, bank_account FROM transactions WHERE (UPPER(user_name) = UPPER($1) OR bank_account = $2) AND campaign_id = $3 LIMIT 1',
+      "SELECT user_name, bank_account FROM transactions WHERE (UPPER(user_name) = UPPER($1) OR bank_account = $2) AND campaign_id = $3 AND status != 'REJECTED' LIMIT 1",
       [user_name, bank_account, campaignId]
     );
 
