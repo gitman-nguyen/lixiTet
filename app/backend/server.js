@@ -232,6 +232,30 @@ app.post('/api/lixi/confirm', async (req, res) => {
       return res.json({ success: true, note: "Mock data session, not saved to DB" });
     }
 
+    // Kiểm tra xem tên hoặc số tài khoản đã tồn tại trong bảng transactions chưa (Không phân biệt hoa thường với tên)
+    // CẬP NHẬT: Thêm điều kiện AND campaign_id = $3 để chỉ check trùng trong cùng 1 chiến dịch
+    const checkDuplicate = await pool.query(
+      'SELECT user_name, bank_account FROM transactions WHERE (UPPER(user_name) = UPPER($1) OR bank_account = $2) AND campaign_id = $3 LIMIT 1',
+      [user_name, bank_account, campaignId]
+    );
+
+    if (checkDuplicate.rows.length > 0) {
+      const duplicateUser = checkDuplicate.rows[0];
+      
+      // So sánh để biết chính xác là trùng gì và trả về mã lỗi (code) tương ứng cho Frontend
+      if (duplicateUser.bank_account === bank_account) {
+        return res.status(400).json({ 
+          code: 'DUPLICATE_ACCOUNT', 
+          message: 'Số tài khoản này đã được sử dụng để nhận lì xì.' 
+        });
+      } else {
+        return res.status(400).json({ 
+          code: 'DUPLICATE_NAME', 
+          message: 'Tên tài khoản này đã được sử dụng để nhận lì xì.' 
+        });
+      }
+    }
+
     const transactionId = `TX-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     await pool.query(

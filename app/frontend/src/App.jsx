@@ -350,11 +350,16 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
 };
 
 const BankForm = ({ onSubmit, amount }) => {
-  // Sửa bank thành chuỗi rỗng để bắt buộc người dùng phải click chọn
   const [formData, setFormData] = useState({ name: '', bank: '', account: '' });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Validate Tên chủ tài khoản (BẮT BUỘC)
+    if (!formData.name || formData.name.trim() === '') {
+      setError('Vui lòng nhập tên chủ tài khoản!');
+      return;
+    }
     // Validate Ngân hàng
     if (!formData.bank) {
       setError('Vui lòng chọn ngân hàng nhận tiền!');
@@ -366,9 +371,17 @@ const BankForm = ({ onSubmit, amount }) => {
       return;
     }
     
-    // Nếu pass hết điều kiện, xóa lỗi và submit
     setError('');
-    onSubmit(formData);
+    setIsSubmitting(true);
+    
+    try {
+      // Gọi hàm onSubmit (handleConfirmBank) và chờ kết quả
+      await onSubmit(formData);
+    } catch (err) {
+      // Hiển thị lỗi nhận được nếu bị trùng
+      setError(err.message);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -378,9 +391,12 @@ const BankForm = ({ onSubmit, amount }) => {
         <input 
           type="text" 
           className="w-full p-3 sm:p-4 rounded-lg text-black font-bold uppercase text-base sm:text-lg" 
-          placeholder="TÊN CHỦ TÀI KHOẢN (Tùy chọn)" 
+          placeholder="TÊN CHỦ TÀI KHOẢN (*)" 
           value={formData.name} 
-          onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
+          onChange={e => {
+            setFormData({...formData, name: e.target.value.toUpperCase()});
+            if (error) setError('');
+          }} 
         />
         
         <SearchableBankSelect 
@@ -388,7 +404,7 @@ const BankForm = ({ onSubmit, amount }) => {
           value={formData.bank} 
           onChange={(newBankCode) => {
             setFormData({...formData, bank: newBankCode});
-            if (error) setError(''); // Xóa lỗi khi người dùng chọn xong
+            if (error) setError('');
           }} 
         />
 
@@ -399,11 +415,10 @@ const BankForm = ({ onSubmit, amount }) => {
           value={formData.account} 
           onChange={e => {
             setFormData({...formData, account: e.target.value});
-            if (error) setError(''); // Xóa lỗi khi người dùng gõ
+            if (error) setError('');
           }} 
         />
 
-        {/* Hiển thị thông báo lỗi nếu có */}
         {error && (
           <div className="bg-red-500/80 border border-red-300 text-white px-3 py-2 rounded-lg text-center font-medium animate-pulse">
             {error}
@@ -412,9 +427,10 @@ const BankForm = ({ onSubmit, amount }) => {
 
         <button 
           onClick={handleSubmit} 
-          className="w-full mt-4 sm:mt-6 bg-green-600 hover:bg-green-500 font-black py-3 sm:py-4 rounded-lg shadow-xl uppercase text-lg sm:text-xl transition-transform hover:scale-105"
+          disabled={isSubmitting}
+          className={`w-full mt-4 sm:mt-6 font-black py-3 sm:py-4 rounded-lg shadow-xl uppercase text-lg sm:text-xl transition-transform ${isSubmitting ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 hover:scale-105'}`}
         >
-          Xác Nhận Nhận {amount.toLocaleString()}đ
+          {isSubmitting ? 'Đang xử lý...' : `Xác Nhận Nhận ${amount.toLocaleString()}đ`}
         </button>
       </div>
     </div>
@@ -481,7 +497,7 @@ export default function App() {
 
   const handleConfirmBank = async (bankInfo) => {
     try {
-      await fetch('/api/lixi/confirm', {
+      const res = await fetch('/api/lixi/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -493,8 +509,27 @@ export default function App() {
           bank_account: bankInfo.account
         })
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        
+        // KIỂM TRA MÃ LỖI TỪ BACKEND ĐỂ HIỂN THỊ THÔNG BÁO TƯƠNG ỨNG
+        // Bạn cần đảm bảo Backend trả về field 'code' tương ứng (hoặc tự điều chỉnh tên field cho khớp backend)
+        if (errData.code === 'DUPLICATE_NAME') {
+          throw new Error(`Tên tài khoản ${bankInfo.name} đã nhận lì xì, Chúc năm mới nhiều may mắn sẽ đến với bạn!`);
+        } else if (errData.code === 'DUPLICATE_ACCOUNT') {
+          throw new Error(`Số tài khoản ${bankInfo.account} đã nhận lì xì, Chúc năm mới nhiều may mắn sẽ đến với bạn!`);
+        }
+        
+        // Thông báo mặc định nếu lỗi khác
+        throw new Error(errData.message || "Lỗi khi lưu thông tin. Vui lòng thử lại!");
+      }
+
       setView('done');
-    } catch (e) { alert("Lỗi khi lưu thông tin"); }
+    } catch (e) { 
+      // Ném lỗi ra để component BankForm bắt được và in ra UI
+      throw e; 
+    }
   };
 
   const handleAdminAuth = (e) => {
