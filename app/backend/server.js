@@ -66,12 +66,12 @@ app.post('/api/admin/campaigns', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { id, name, budget, envelope_count, envelope_images, prizes } = req.body;
+    const { id, name, budget, envelope_count, envelope_images, prizes, is_active } = req.body;
     
     // Tạo chiến dịch
     await client.query(
-      'INSERT INTO campaigns (id, name, budget, spent, envelope_count, envelope_images) VALUES ($1, $2, $3, 0, $4, $5)',
-      [id, name, budget, envelope_count, JSON.stringify(envelope_images || [])]
+      'INSERT INTO campaigns (id, name, budget, spent, envelope_count, envelope_images, is_active) VALUES ($1, $2, $3, 0, $4, $5, $6)',
+      [id, name, budget, envelope_count, JSON.stringify(envelope_images || []), is_active !== undefined ? is_active : true]
     );
 
     // Thêm danh sách giải thưởng
@@ -100,12 +100,12 @@ app.put('/api/admin/campaigns/:id', async (req, res) => {
   try {
     await client.query('BEGIN');
     const { id } = req.params;
-    const { name, budget, envelope_count, envelope_images, prizes } = req.body;
+    const { name, budget, envelope_count, envelope_images, prizes, is_active } = req.body;
 
     // Cập nhật thông tin chiến dịch
     await client.query(
-      'UPDATE campaigns SET name = $1, budget = $2, envelope_count = $3, envelope_images = $4 WHERE id = $5',
-      [name, budget, envelope_count, JSON.stringify(envelope_images || []), id]
+      'UPDATE campaigns SET name = $1, budget = $2, envelope_count = $3, envelope_images = $4, is_active = $5 WHERE id = $6',
+      [name, budget, envelope_count, JSON.stringify(envelope_images || []), is_active !== undefined ? is_active : true, id]
     );
 
     // Xóa giải thưởng cũ và thêm lại cái mới
