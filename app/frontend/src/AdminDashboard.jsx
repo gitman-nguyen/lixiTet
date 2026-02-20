@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, Smartphone, QrCode, X, Settings, Copy, Save, Plus, Trash2, Edit3, 
   History, Wallet, Users, Loader2, Image as ImageIcon, Banknote, Gift,
-  Maximize2, Share2, Download // Các icon mới được thêm vào
+  Maximize2, Share2, Download
 } from 'lucide-react';
 
 // --- UTILS DÀNH CHO ADMIN ---
@@ -141,7 +141,7 @@ const AdminEnvelopeTypes = ({ envelopeTypes, setEnvelopeTypes }) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleAdd = () => setTypes([...types, { id: `env-${Date.now()}`, name: 'Phong bao mới', image_url: '' }]);
-  const handleRemove = (id) => setTypes(parseFloat(types.filter(t => t.id !== id)));
+  const handleRemove = (id) => setTypes(types.filter(t => t.id !== id));
   const handleChange = (id, field, value) => setTypes(types.map(t => t.id === id ? { ...t, [field]: value } : t));
 
   const handleSave = async () => {
@@ -277,9 +277,18 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
       .then(res => res.json())
       .then(data => {
          const parsedImages = data.envelope_images ? (typeof data.envelope_images === 'string' ? JSON.parse(data.envelope_images) : data.envelope_images) : Array(data.envelope_count || 8).fill(envelopeTypes.length > 0 ? envelopeTypes[0].image_url : '');
+         
+         // Fix: Parse an toàn JSON nếu prizes bị lưu dưới dạng string
+         let parsedPrizes = [];
+         try {
+             parsedPrizes = data.prizes ? (typeof data.prizes === 'string' ? JSON.parse(data.prizes) : data.prizes) : [];
+         } catch (e) {
+             parsedPrizes = [];
+         }
+
          setForm(prev => ({ 
            ...prev, 
-           prizes: data.prizes || [],
+           prizes: parsedPrizes,
            envelope_count: data.envelope_count || 8,
            envelope_images: parsedImages
          }));
@@ -312,17 +321,17 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
   };
 
   const handleMoneyTypeChange = (index, selectedAmount) => {
-    const selectedType = moneyTypes.find(t => t.amount === selectedAmount);
+    const selectedType = moneyTypes.find(t => Number(t.amount) === selectedAmount);
     if (selectedType) {
       const newPrizes = [...form.prizes];
-      newPrizes[index] = { ...newPrizes[index], amount: selectedType.amount, image_url: selectedType.image_url };
+      newPrizes[index] = { ...newPrizes[index], amount: Number(selectedType.amount), image_url: selectedType.image_url };
       setForm({ ...form, prizes: newPrizes });
     }
   };
 
   const addPrize = () => {
     const defaultType = moneyTypes[0] || { amount: 0, image_url: '' };
-    setForm({ ...form, prizes: [...form.prizes, { amount: defaultType.amount, quantity: 10, image_url: defaultType.image_url }] });
+    setForm({ ...form, prizes: [...form.prizes, { amount: Number(defaultType.amount), quantity: 10, image_url: defaultType.image_url }] });
   };
 
   const removePrize = (index) => setForm({ ...form, prizes: form.prizes.filter((_, i) => i !== index) });
@@ -393,9 +402,14 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
               {form.prizes.map((prize, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2 border rounded shadow-sm">
                   <div className="col-span-5">
-                    <select className="w-full border p-2 rounded font-bold text-green-700 bg-white" value={prize.amount || ''} onChange={e => handleMoneyTypeChange(idx, Number(e.target.value))}>
+                    {/* Fix: Chuyển đổi toàn bộ value của thẻ <select> và <option> thành String để đảm bảo mapping chính xác, giải quyết lỗi load sai giá trị 0 hoặc Type Mismatch */}
+                    <select 
+                      className="w-full border p-2 rounded font-bold text-green-700 bg-white" 
+                      value={prize.amount != null ? String(prize.amount) : ''} 
+                      onChange={e => handleMoneyTypeChange(idx, Number(e.target.value))}
+                    >
                       <option value="" disabled>Chọn mệnh giá...</option>
-                      {moneyTypes.map(t => <option key={t.id} value={t.amount}>{t.amount.toLocaleString()} đ</option>)}
+                      {moneyTypes.map(t => <option key={t.id} value={String(t.amount)}>{Number(t.amount).toLocaleString()} đ</option>)}
                     </select>
                   </div>
                   <div className="col-span-3"><input type="number" className="w-full border p-2 rounded text-center" value={prize.quantity !== undefined ? prize.quantity : (prize.remaining_qty || 0)} onChange={e => updatePrize(idx, 'quantity', Number(e.target.value))}/></div>
@@ -419,7 +433,7 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
 
 const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, envelopeTypes }) => {
   const [editingCampaign, setEditingCampaign] = useState(null);
-  const [zoomedCampaign, setZoomedCampaign] = useState(null); // State quản lý zoom QR
+  const [zoomedCampaign, setZoomedCampaign] = useState(null);
 
   const handleSaveCampaign = async (campaignData) => {
     try {
@@ -462,7 +476,6 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
     envelope_images: Array(8).fill(envelopeTypes.length > 0 ? envelopeTypes[0].image_url : '')
   });
 
-  // Chức năng tải ảnh QR
   const handleDownloadQR = async (campaign) => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(window.location.origin + '?c=' + campaign.id)}`;
     try {
@@ -481,7 +494,6 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
     }
   };
 
-  // Chức năng chia sẻ Social/Native
   const handleShareSocial = async (campaign) => {
     const shareUrl = window.location.origin + '?c=' + campaign.id;
     const shareTitle = `Nhận lì xì: ${campaign.name}`;
@@ -497,7 +509,6 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
         console.log('Hủy chia sẻ', error);
       }
     } else {
-      // Fallback nếu trình duyệt không hỗ trợ (VD PC cũ)
       copyToClipboard(shareUrl);
       alert("Đã copy link chiến dịch vào khay nhớ tạm để bạn chia sẻ!");
     }
@@ -518,7 +529,6 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
             </div>
             <h3 className="font-bold text-lg pr-12">{c.name}</h3>
             <div className="mt-4 flex gap-4">
-               {/* Click vào QR sẽ mở Modal Zoom */}
                <div 
                  className="relative w-20 h-20 shrink-0 cursor-pointer group/qr"
                  onClick={() => setZoomedCampaign(c)}
@@ -541,7 +551,6 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
         ))}
       </div>
 
-      {/* Modal Zoom & Share QR */}
       {zoomedCampaign && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setZoomedCampaign(null)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 flex flex-col items-center relative animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
@@ -638,7 +647,6 @@ const AdminQueueList = ({ queue, onMarkPaid }) => {
   );
 };
 
-// EXPORT COMPONENT CHÍNH CỦA ADMIN
 export default function AdminDashboardComponent({ onBack, appAssets, setAppAssets }) {
   const [tab, setTab] = useState('queue');
   const [queue, setQueue] = useState([]);
@@ -666,7 +674,6 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
   useEffect(() => {
     setLoading(true);
     
-    // Đọc các cài đặt trực tiếp từ Database API thay vì LocalStorage
     const loadSettings = async () => {
       try {
         const [mRes, eRes] = await Promise.all([
