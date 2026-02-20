@@ -196,7 +196,7 @@ const EnvelopeCarousel = ({ onSelect, count = 8, envelopeImages, defaultEnvelope
 
   return (
     <div 
-      className="relative flex-1 flex flex-col items-center justify-end w-full max-w-4xl mx-auto py-2 pb-10 sm:pb-12"
+      className="relative flex-1 flex flex-col items-center justify-end w-full max-w-4xl mx-auto py-2 pb-6 sm:pb-8"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -219,13 +219,32 @@ const EnvelopeCarousel = ({ onSelect, count = 8, envelopeImages, defaultEnvelope
         >
            <img 
              src={currentImage} 
-             className="h-[60dvh] sm:h-[70dvh] max-h-[750px] w-auto max-w-[90vw] object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] sm:drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)] filter brightness-110 rounded-xl hover:scale-105 transition-transform duration-300" 
+             className="h-[55dvh] sm:h-[65dvh] max-h-[700px] w-auto max-w-[90vw] object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] sm:drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)] filter brightness-110 rounded-xl hover:scale-105 transition-transform duration-300" 
              alt="Lixi Envelope" 
            />
-           <div className="mt-6 sm:mt-10 shrink-0 bg-gradient-to-r from-amber-400 to-yellow-500 text-red-900 px-8 py-3 sm:px-12 sm:py-4 rounded-full font-black text-xl sm:text-3xl uppercase shadow-[0_10px_30px_rgba(245,158,11,0.5)] animate-bounce">
+           <div className="mt-5 sm:mt-8 shrink-0 bg-gradient-to-r from-amber-400 to-yellow-500 text-red-900 px-8 py-3 sm:px-12 sm:py-4 rounded-full font-black text-xl sm:text-3xl uppercase shadow-[0_10px_30px_rgba(245,158,11,0.5)] animate-bounce">
              Mở Bao #{currentIndex + 1}
            </div>
         </motion.div>
+      </div>
+
+      {/* --- PHẦN DẤU CHẤM (PAGINATION DOTS) ĐƯỢC THÊM VÀO ĐÂY --- */}
+      <div className="flex justify-center items-center gap-2 mt-6 sm:mt-8 z-10">
+        {Array.from({ length: count }).map((_, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+              e.stopPropagation(); // Ngăn sự kiện click truyền lên component cha
+              setCurrentIndex(idx);
+            }}
+            className={`rounded-full transition-all duration-300 shadow-md ${
+              currentIndex === idx 
+                ? 'bg-amber-400 w-8 h-3 sm:w-10 sm:h-3.5' // Dấu chấm đang chọn sẽ dài ra và có màu vàng
+                : 'bg-white/40 hover:bg-white/70 w-3 h-3 sm:w-3.5 sm:h-3.5'
+            }`}
+            aria-label={`Chọn bao lì xì số ${idx + 1}`}
+          />
+        ))}
       </div>
     </div>
   );
