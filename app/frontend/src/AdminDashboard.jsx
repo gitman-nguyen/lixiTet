@@ -666,6 +666,66 @@ const AdminQueueList = ({ queue, onMarkPaid }) => {
   );
 };
 
+/* =========================================
+   THÀNH PHẦN LỊCH SỬ GIAO DỊCH
+   ========================================= */
+const AdminHistoryList = ({ history }) => {
+  return (
+    <div className="space-y-4 max-w-5xl">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Lịch sử giao dịch</h2>
+        <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded border shadow-sm">
+          Tổng cộng: <b>{history.length}</b> giao dịch
+        </span>
+      </div>
+      <div className="bg-white rounded-lg shadow border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-100 border-b">
+                <th className="p-3 text-sm font-bold text-gray-700">Mã GD</th>
+                <th className="p-3 text-sm font-bold text-gray-700">Người nhận</th>
+                <th className="p-3 text-sm font-bold text-gray-700">Ngân hàng</th>
+                <th className="p-3 text-sm font-bold text-gray-700">Số tài khoản</th>
+                <th className="p-3 text-sm font-bold text-gray-700 text-right">Số tiền</th>
+                <th className="p-3 text-sm font-bold text-gray-700 text-center">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.length === 0 ? (
+                <tr><td colSpan="6" className="p-6 text-center text-gray-500">Chưa có giao dịch nào.</td></tr>
+              ) : (
+                history.map((tx) => (
+                  <tr key={tx.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 text-xs text-gray-500 font-mono" title={tx.id}>
+                      {tx.id.substring(0, 15)}...
+                    </td>
+                    <td className="p-3 text-sm font-bold">{tx.user_name}</td>
+                    <td className="p-3 text-sm">
+                      <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{tx.bank_code}</span>
+                    </td>
+                    <td className="p-3 text-sm font-mono">{tx.bank_account}</td>
+                    <td className="p-3 text-sm font-bold text-green-600 text-right">
+                      {Number(tx.amount).toLocaleString()} đ
+                    </td>
+                    <td className="p-3 text-sm text-center">
+                      {tx.status === 'PAID' ? (
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">ĐÃ CHUYỂN</span>
+                      ) : (
+                        <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold">CHỜ XỬ LÝ</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function AdminDashboardComponent({ onBack, appAssets, setAppAssets }) {
   const [tab, setTab] = useState('queue');
   const [queue, setQueue] = useState([]);
@@ -673,6 +733,7 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
   const [moneyTypes, setMoneyTypes] = useState([]);
   const [envelopeTypes, setEnvelopeTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
 
   const fetchQueue = async () => {
     try {
@@ -687,6 +748,14 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
       const res = await fetch('/api/admin/campaigns');
       const data = await res.json();
       setCampaigns(Array.isArray(data) ? data : []);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch('/api/admin/history');
+      const data = await res.json();
+      setHistory(Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
   };
 
@@ -711,7 +780,7 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
       }
     };
 
-    Promise.all([fetchQueue(), fetchCampaigns(), loadSettings()]).finally(() => setLoading(false));
+    Promise.all([fetchQueue(), fetchCampaigns(), loadSettings(), fetchHistory()]).finally(() => setLoading(false));
   }, []);
 
   const handleMarkPaid = async (id) => {
@@ -728,6 +797,7 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
       <div className="w-full md:w-64 bg-white shadow-lg p-4 flex flex-col gap-2 z-20">
         <div className="text-xl font-bold text-red-600 mb-6 flex items-center gap-2 cursor-pointer" onClick={onBack}><Settings /> Admin Panel</div>
         <button onClick={() => setTab('queue')} className={`p-3 rounded-lg flex items-center gap-2 font-medium ${tab === 'queue' ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50'}`}><Users size={20} /> Hàng đợi xử lý {queue.length > 0 && <span className="ml-auto bg-red-500 text-white text-xs px-2 rounded-full">{queue.length}</span>}</button>
+        <button onClick={() => { setTab('history'); fetchHistory(); }} className={`p-3 rounded-lg flex items-center gap-2 font-medium ${tab === 'history' ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50'}`}><History size={20} /> Lịch sử Giao dịch</button>
         <button onClick={() => setTab('campaigns')} className={`p-3 rounded-lg flex items-center gap-2 font-medium ${tab === 'campaigns' ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50'}`}><Wallet size={20} /> Quản lý Chiến dịch</button>
         <button onClick={() => setTab('moneyTypes')} className={`p-3 rounded-lg flex items-center gap-2 font-medium ${tab === 'moneyTypes' ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50'}`}><Banknote size={20} /> Quản lý Loại tiền</button>
         <button onClick={() => setTab('envelopeTypes')} className={`p-3 rounded-lg flex items-center gap-2 font-medium ${tab === 'envelopeTypes' ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50'}`}><Gift size={20} /> Quản lý Phong bao</button>
@@ -736,6 +806,7 @@ export default function AdminDashboardComponent({ onBack, appAssets, setAppAsset
       </div>
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
         {tab === 'queue' && <AdminQueueList queue={queue} onMarkPaid={handleMarkPaid} />}
+        {tab === 'history' && <AdminHistoryList history={history} />}
         {tab === 'campaigns' && <AdminCampaignConfig campaigns={campaigns} setCampaigns={setCampaigns} onRefresh={fetchCampaigns} moneyTypes={moneyTypes} envelopeTypes={envelopeTypes} />}
         {tab === 'moneyTypes' && <AdminMoneyTypes moneyTypes={moneyTypes} setMoneyTypes={setMoneyTypes} />}
         {tab === 'envelopeTypes' && <AdminEnvelopeTypes envelopeTypes={envelopeTypes} setEnvelopeTypes={setEnvelopeTypes} />}

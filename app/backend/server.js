@@ -172,6 +172,16 @@ app.get('/api/lixi/campaign/:id', async (req, res) => {
   }
 });
 
+// Lấy lịch sử giao dịch cho Admin (Sắp xếp mới nhất lên đầu, giới hạn 500 giao dịch để tránh nặng)
+app.get('/api/admin/history', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 500");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Xử lý quay thưởng
 app.post('/api/lixi/spin', async (req, res) => {
   const client = await pool.connect();
