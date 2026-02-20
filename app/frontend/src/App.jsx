@@ -463,6 +463,9 @@ export default function App() {
         const res = await fetch(`/api/lixi/campaign/${campaignId}`);
         if (res.ok) {
           const data = await res.json();
+          if (data.is_active === false || data.is_active === 0) {
+            setView('inactive');
+          }
           setCampaign(data);
         }
 
@@ -627,6 +630,25 @@ export default function App() {
             <motion.button whileTap={{ scale: 0.9 }} onClick={() => setView('game')} className="bg-amber-500 text-red-900 text-xl sm:text-3xl font-black px-12 py-4 sm:px-20 sm:py-6 rounded-full shadow-[0_0_30px_rgba(245,158,11,0.6)] sm:shadow-[0_0_40px_rgba(245,158,11,0.8)] animate-pulse uppercase">
               Nhận Lì Xì
             </motion.button>
+          </div>
+        )}
+
+        {view === 'inactive' && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center px-4">
+            <div className="bg-black/60 p-8 sm:p-10 rounded-3xl border border-amber-400/50 backdrop-blur-md shadow-2xl max-w-md w-full">
+              <div className="flex justify-center mb-6">
+                <div className="bg-red-500/20 p-4 rounded-full">
+                  <X size={60} className="text-red-500 drop-shadow-lg" />
+                </div>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-amber-400 mb-4 uppercase drop-shadow-md font-serif">Rất Tiếc!</h2>
+              <p className="text-white text-lg sm:text-xl drop-shadow-sm font-medium leading-relaxed">
+                Thời gian Lì xì đã kết thúc hoặc chương trình đang tạm dừng.
+              </p>
+              <div className="mt-6 pt-6 border-t border-white/20">
+                <p className="text-amber-200 text-base font-medium">Hẹn gặp lại bạn vào dịp khác nhé! Chúc bạn năm mới bình an.</p>
+              </div>
+            </div>
           </div>
         )}
 

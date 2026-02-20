@@ -262,6 +262,7 @@ const AdminSettings = ({ appAssets, setAppAssets }) => {
 const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeTypes }) => {
   const [form, setForm] = useState({ 
     ...campaign, 
+    is_active: campaign.is_active !== undefined ? Boolean(campaign.is_active) : true,
     prizes: campaign.prizes || [],
     envelope_images: campaign.envelope_images || Array(campaign.envelope_count || 8).fill(envelopeTypes.length > 0 ? envelopeTypes[0].image_url : '')
   });
@@ -290,7 +291,8 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
            ...prev, 
            prizes: parsedPrizes,
            envelope_count: data.envelope_count || 8,
-           envelope_images: parsedImages
+           envelope_images: parsedImages,
+           is_active: data.is_active !== undefined ? Boolean(data.is_active) : true
          }));
          setLoading(false);
       })
@@ -365,6 +367,18 @@ const CampaignEditModal = ({ campaign, onClose, onSave, moneyTypes, envelopeType
                 <label className="block text-sm font-bold text-gray-700 mb-1">Số lượng phong bao hiển thị</label>
                 <input type="number" className="w-full border p-2 rounded" value={form.envelope_count || 8} onChange={handleCountChange}/>
               </div>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <input 
+                type="checkbox" 
+                id="isActive" 
+                checked={form.is_active} 
+                onChange={e => setForm({...form, is_active: e.target.checked})}
+                className="w-5 h-5 cursor-pointer accent-green-600"
+              />
+              <label htmlFor="isActive" className="text-sm font-bold text-gray-700 cursor-pointer">
+                Trạng thái: {form.is_active ? <span className="text-green-600">Đang hoạt động (Khách có thể nhận lì xì)</span> : <span className="text-red-600">Tạm khóa (Khách không thể chơi)</span>}
+              </label>
             </div>
           </div>
 
@@ -488,6 +502,7 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
   const handleCreateNew = () => setEditingCampaign({ 
     id: `new-${Date.now()}`, 
     name: 'Chiến dịch Mới', 
+    is_active: true,
     budget: 0, 
     spent: 0, 
     envelope_count: 8, 
@@ -546,7 +561,14 @@ const AdminCampaignConfig = ({ campaigns, setCampaigns, onRefresh, moneyTypes, e
             <div className="absolute top-4 right-4 flex gap-2">
               <button onClick={() => setEditingCampaign(c)} className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"><Edit3 size={16}/></button>
             </div>
-            <h3 className="font-bold text-lg pr-12">{c.name}</h3>
+            <h3 className="font-bold text-lg pr-12 flex items-center gap-2 flex-wrap">
+              {c.name}
+              {c.is_active === false || c.is_active === 0 ? (
+                <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded uppercase">Đã tắt</span>
+              ) : (
+                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded uppercase">Đang chạy</span>
+              )}
+            </h3>
             <div className="mt-4 flex gap-4">
                <div 
                  className="relative w-20 h-20 shrink-0 cursor-pointer group/qr"
