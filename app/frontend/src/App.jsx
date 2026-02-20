@@ -349,7 +349,7 @@ const ResultScreen = ({ amount, onNext, envelopeImg, moneyImg }) => {
   );
 };
 
-cconst BankForm = ({ onSubmit, amount }) => {
+const BankForm = ({ onSubmit, amount }) => {
   // Sửa bank thành chuỗi rỗng để bắt buộc người dùng phải click chọn
   const [formData, setFormData] = useState({ name: '', bank: '', account: '' });
   const [error, setError] = useState('');
